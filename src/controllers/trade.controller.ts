@@ -6,8 +6,8 @@ export const getFxTrades = async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string) || 1;
   const offset = (page - 1) * limit;
 
-  const data = await getFxTradesPaginated(limit, offset);
-  res.json(data);
+  const { total, data } = await getFxTradesPaginated(limit, offset);
+  res.json({ total, length: data.length, data });
 };
 
 export const getEquityTrades = async (req: Request, res: Response) => {
@@ -15,6 +15,6 @@ export const getEquityTrades = async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string) || 1;
   const offset = (page - 1) * limit;
 
-  const data = await getEquityTradesPaginated(limit, offset);
-  res.json(data);
+  const { total, data } = await getEquityTradesPaginated(limit, offset);
+  res.json({ total, length: data.length, data });
 };
