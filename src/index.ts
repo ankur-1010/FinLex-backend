@@ -1,10 +1,13 @@
 import express from 'express';
 import * as dotenv from 'dotenv';
+import cors from 'cors'; 
 import { AppDataSource } from './config/data-source';
 import tradeRoutes from './routes/trade.routes';
 dotenv.config(); // Load environment variables from .env file
 
 const app = express();
+
+app.use(cors()); // Enable CORS for all routes
 app.use(express.json());
 app.use('/api', tradeRoutes);
 const port = parseInt(process.env.PORT || '4000');
