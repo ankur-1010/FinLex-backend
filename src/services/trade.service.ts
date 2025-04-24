@@ -142,11 +142,11 @@ export const searchEquityTrades = async (searchTerm: string, limit: number, offs
 
   const data = await equityRepo
     .createQueryBuilder('equity')
-    .where('equity.trade_id ILIKE :searchTerm', { searchTerm: `%${searchTerm}%` })
+    .where('CAST(equity.trade_id AS TEXT) ILIKE :searchTerm', { searchTerm: `%${searchTerm}%` })
 
-    .orWhere('equity.trade_date ILIKE :searchTerm', { searchTerm: `%${searchTerm}%` })
+    .orWhere('CAST(equity.trade_date AS TEXT) ILIKE :searchTerm', { searchTerm: `%${searchTerm}%` })
 
-    .orWhere('equity.value_date ILIKE :searchTerm', { searchTerm: `%${searchTerm}%` })
+    .orWhere('CAST(equity.value_date AS TEXT) ILIKE :searchTerm', { searchTerm: `%${searchTerm}%` })
 
     .orWhere('equity.counterparty ILIKE :searchTerm', { searchTerm: `%${searchTerm}%` })
 
@@ -178,11 +178,11 @@ export const searchEquityTrades = async (searchTerm: string, limit: number, offs
 
   const total = await equityRepo
     .createQueryBuilder('equity')
-    .where('equity.trade_id ILIKE :searchTerm', { searchTerm: `%${searchTerm}%` })
+    .where('CAST(equity.trade_id AS TEXT) ILIKE :searchTerm', { searchTerm: `%${searchTerm}%` })
 
-    .orWhere('equity.trade_date ILIKE :searchTerm', { searchTerm: `%${searchTerm}%` })
+    .orWhere('CAST(equity.trade_date AS TEXT) ILIKE :searchTerm', { searchTerm: `%${searchTerm}%` })
 
-    .orWhere('equity.value_date ILIKE :searchTerm', { searchTerm: `%${searchTerm}%` })
+    .orWhere('CAST(equity.value_date AS TEXT) ILIKE :searchTerm', { searchTerm: `%${searchTerm}%` })
 
     .orWhere('equity.counterparty ILIKE :searchTerm', { searchTerm: `%${searchTerm}%` })
 

@@ -2,7 +2,7 @@ import { IsString, IsDateString, IsNumber } from 'class-validator';
 
 export class CreateEquityTradeDto {
   @IsString()
-  trade_id: string;
+  trade_id!: string;
 
   @IsDateString()
   trade_date: string;
