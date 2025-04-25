@@ -8,7 +8,8 @@ const equityRepo = AppDataSource.getRepository(EquityTrade);
 
 
 
-// Function to get paginated FX trades
+//---------------------------------Function to get paginated FX trades --------------------------------------------------
+
 export const getFxTradesPaginated = async (limit: number, offset: number) => {
   // Get total count of FX trades
   const total = await fxRepo.count();
@@ -28,10 +29,10 @@ export const getFxTradesPaginated = async (limit: number, offset: number) => {
 
 
 
+//-------------------------------- Function to get paginated Equity trades-----------------------------------------------
 
 
 
-// Function to get paginated Equity trades
 export const getEquityTradesPaginated = async (limit: number, offset: number) => {
 
   // Get total count of Equity trades
@@ -55,10 +56,9 @@ export const getEquityTradesPaginated = async (limit: number, offset: number) =>
 
 
 
+//----------------------------------- Global Search in fx_trades table--------------------------------------------------------
 
 
-
-//  Global Search in fx_trades table
 export const searchFxTrades = async (searchTerm: string, limit: number, offset: number) => {
 
   const data = await fxRepo
@@ -134,10 +134,10 @@ export const searchFxTrades = async (searchTerm: string, limit: number, offset: 
 
 
 
+//-------------------------------------  Global Search in equity_trades table --------------------------------------------------------
 
 
 
-//  Global Search in equity_trades table
 export const searchEquityTrades = async (searchTerm: string, limit: number, offset: number) => {
 
   const data = await equityRepo
@@ -200,6 +200,109 @@ export const searchEquityTrades = async (searchTerm: string, limit: number, offs
 
     .orWhere('CAST(equity.price AS TEXT) ILIKE :searchTerm', { searchTerm: `%${searchTerm}%` })
 
+    .getCount();
+
+  return { total, data: formattedData };
+};
+
+
+//----------------------------------- Search in fx_trades table by a specific field----------------------------------------
+export const searchFxTradesByField = async (
+  fieldName: string,
+  searchTerm: string,
+  limit: number,
+  offset: number
+) => {
+  // Validate the field name to prevent SQL injection
+  const validFields = [
+    'trade_id',
+    'trade_date',
+    'value_date',
+    'counterparty',
+    'product_type',
+    'buy_sell',
+    'currency',
+    'execution_venue',
+    'trader_name',
+    'currency_pair',
+    'notional',
+    'rate',
+  ];
+
+  if (!validFields.includes(fieldName)) {
+    throw new Error('Invalid field name');
+  }
+
+  // Build the query dynamically
+  const data = await fxRepo
+    .createQueryBuilder('fx')
+    .where(`CAST(fx.${fieldName} AS TEXT) ILIKE :searchTerm`, { searchTerm: `%${searchTerm}%` })
+    .skip(offset)
+    .take(limit)
+    .getMany();
+
+  // Format dates to local time zone
+  const formattedData = data.map((trade) => ({
+    ...trade,
+    trade_date: format(new Date(trade.trade_date), 'yyyy-MM-dd HH:mm:ss'),
+    value_date: format(new Date(trade.value_date), 'yyyy-MM-dd HH:mm:ss'),
+  }));
+
+  // Get the total count for the specific field
+  const total = await fxRepo
+    .createQueryBuilder('fx')
+    .where(`CAST(fx.${fieldName} AS TEXT) ILIKE :searchTerm`, { searchTerm: `%${searchTerm}%` })
+    .getCount();
+
+  return { total, data: formattedData };
+};
+
+
+//----------------------------------- Search in equity_trades table by a specific field----------------------------------------
+export const searchEquityTradesByField = async (
+  fieldName: string,
+  searchTerm: string,
+  limit: number,
+  offset: number
+) => {
+  // Validate the field name to prevent SQL injection
+  const validFields = [
+    'trade_id',
+    'trade_date',
+    'value_date',
+    'counterparty',
+    'product_type',
+    'buy_sell',
+    'ticker',
+    'execution_venue',
+    'trader_name',
+    'quantity',
+    'price',
+  ];
+
+  if (!validFields.includes(fieldName)) {
+    throw new Error('Invalid field name');
+  }
+
+  // Build the query dynamically
+  const data = await equityRepo
+    .createQueryBuilder('equity')
+    .where(`CAST(equity.${fieldName} AS TEXT) ILIKE :searchTerm`, { searchTerm: `%${searchTerm}%` })
+    .skip(offset)
+    .take(limit)
+    .getMany();
+
+  // Format dates to local time zone
+  const formattedData = data.map((trade) => ({
+    ...trade,
+    trade_date: format(new Date(trade.trade_date), 'yyyy-MM-dd HH:mm:ss'),
+    value_date: format(new Date(trade.value_date), 'yyyy-MM-dd HH:mm:ss'),
+  }));
+
+  // Get the total count for the specific field
+  const total = await equityRepo
+    .createQueryBuilder('equity')
+    .where(`CAST(equity.${fieldName} AS TEXT) ILIKE :searchTerm`, { searchTerm: `%${searchTerm}%` })
     .getCount();
 
   return { total, data: formattedData };
