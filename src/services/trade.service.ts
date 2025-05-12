@@ -2,13 +2,77 @@ import { format } from 'date-fns';
 import { AppDataSource } from '../config/data-source';
 import { FxTrade } from '../entities/FxTrade';
 import { EquityTrade } from '../entities/EquityTrade';
+import { subDays, startOfDay, endOfDay, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
+
+const getDateRange = (filter: string): { startDate: Date; endDate: Date } => {
+  const today = new Date();
+  console.log('Today:***', today); // Log the current date
+  const year = today.getFullYear();
+  console.log('Year:***', year); // Log the current year
+  console.log('Filter:***', filter); // Log the filter value
+
+  switch (filter.toLowerCase()) {
+    case 'yesterday':
+      return {
+        startDate: startOfDay(subDays(today, 1)),
+        endDate: endOfDay(subDays(today, 1)),
+      };
+    case 'today':
+      return {
+        startDate: startOfDay(today),
+        endDate: endOfDay(today),
+      };
+    case 'last 15 days':
+      return {
+        startDate: subDays(today, 15),
+        endDate: endOfDay(today),
+      };
+    case 'this month':
+      return {
+        startDate: startOfMonth(today),
+        endDate: endOfMonth(today),
+      };
+    case '1st quarter':
+      return {
+        startDate: new Date(year, 3, 1), // Apr 1
+        endDate: new Date(year, 5, 30), // june 30
+      };
+    case '2nd quarter':
+      return {
+        startDate: new Date(year, 6, 1), // jul 1
+        endDate: new Date(year, 8, 30), // sep 30
+      };
+    case '3rd quarter':
+      return {
+        startDate: new Date(year, 9, 1), // oct 1
+        endDate: new Date(year, 11, 31), // dec 30
+      };
+    case '4th quarter':
+      return {
+        startDate: new Date(year, 0, 1), // jan 1
+        endDate: new Date(year, 2, 31), // mar 31
+      };
+    case 'this year':
+      return {
+        startDate: startOfYear(today),
+        endDate: endOfYear(today),
+      };
+    case 'previous year':
+      return {
+        startDate: startOfYear(new Date(year - 1, 0, 1)),
+        endDate: endOfYear(new Date(year - 1, 11, 31)),
+      };
+    default:
+      throw new Error('Invalid date filter');
+  }
+};
 
 const fxRepo = AppDataSource.getRepository(FxTrade);
 const equityRepo = AppDataSource.getRepository(EquityTrade);
 
 
 
-//---------------------------------Function to get paginated FX trades --------------------------------------------------
+//---------------------------------1. Function to get paginated FX trades --------------------------------------------------
 
 export const getFxTradesPaginated = async (limit: number, offset: number) => {
   // Get total count of FX trades
@@ -29,7 +93,12 @@ export const getFxTradesPaginated = async (limit: number, offset: number) => {
 
 
 
-//-------------------------------- Function to get paginated Equity trades-----------------------------------------------
+
+
+
+
+
+//--------------------------------2.Function to get paginated Equity trades-----------------------------------------------
 
 
 
@@ -56,7 +125,22 @@ export const getEquityTradesPaginated = async (limit: number, offset: number) =>
 
 
 
-//----------------------------------- Global Search in fx_trades table--------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//-----------------------------------3. Global Search in fx_trades table--------------------------------------------------------
 
 
 export const searchFxTrades = async (searchTerm: string, limit: number, offset: number) => {
@@ -134,7 +218,9 @@ export const searchFxTrades = async (searchTerm: string, limit: number, offset: 
 
 
 
-//-------------------------------------  Global Search in equity_trades table --------------------------------------------------------
+
+
+//-------------------------------------4. Global Search in equity_trades table --------------------------------------------------------
 
 
 
@@ -206,7 +292,23 @@ export const searchEquityTrades = async (searchTerm: string, limit: number, offs
 };
 
 
-//----------------------------------- Search in fx_trades table by a specific field----------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//----------------------------------- 5. Search in fx_trades table by a specific field----------------------------------------
 export const searchFxTradesByField = async (
   fieldName: string,
   searchTerm: string,
@@ -258,7 +360,13 @@ export const searchFxTradesByField = async (
 };
 
 
-//----------------------------------- Search in equity_trades table by a specific field----------------------------------------
+
+
+
+
+
+
+//-----------------------------------6.Search in equity_trades table by a specific field----------------------------------------
 export const searchEquityTradesByField = async (
   fieldName: string,
   searchTerm: string,
@@ -304,6 +412,80 @@ export const searchEquityTradesByField = async (
     .createQueryBuilder('equity')
     .where(`CAST(equity.${fieldName} AS TEXT) ILIKE :searchTerm`, { searchTerm: `%${searchTerm}%` })
     .getCount();
+
+  return { total, data: formattedData };
+};
+
+
+
+//------------------------7. Get Fx-trades by date range--------------------------------------------------------
+
+export const getFxTradesByDateRange = async (
+  dateFilter: string,
+  dateField: 'trade_date' | 'value_date',
+  limit: number,
+  offset: number
+) => {
+  const query = fxRepo.createQueryBuilder('fx');
+
+  // Get the date range
+  const { startDate, endDate } = getDateRange(dateFilter);
+
+  // Add date range filter dynamically based on the dateField
+  query.where(`fx.${dateField} BETWEEN :startDate AND :endDate`, {
+    startDate,
+    endDate,
+  });
+
+  // Fetch data with pagination
+  const data = await query.skip(offset).take(limit).getMany();
+
+  // Format dates to local time zone
+  const formattedData = data.map((trade) => ({
+    ...trade,
+    trade_date: format(new Date(trade.trade_date), 'yyyy-MM-dd HH:mm:ss'),
+    value_date: format(new Date(trade.value_date), 'yyyy-MM-dd HH:mm:ss'),
+  }));
+
+  // Get total count
+  const total = await query.getCount();
+
+  return { total, data: formattedData };
+};
+
+
+
+
+//----------------------------------8. Get Equity-trades by date range--------------------------------------------------------
+export const getEquityTradesByDateRange = async (
+  dateFilter: string,
+  dateField: 'trade_date' | 'value_date',
+  limit: number,
+  offset: number
+) => {
+  const query = equityRepo.createQueryBuilder('equity');
+
+  // Get the date range
+  const { startDate, endDate } = getDateRange(dateFilter);
+
+  // Add date range filter dynamically based on the dateField
+  query.where(`equity.${dateField} BETWEEN :startDate AND :endDate`, {
+    startDate,
+    endDate,
+  });
+
+  // Fetch data with pagination
+  const data = await query.skip(offset).take(limit).getMany();
+
+  // Format dates to local time zone
+  const formattedData = data.map((trade) => ({
+    ...trade,
+    trade_date: format(new Date(trade.trade_date), 'yyyy-MM-dd HH:mm:ss'),
+    value_date: format(new Date(trade.value_date), 'yyyy-MM-dd HH:mm:ss'),
+  }));
+
+  // Get total count
+  const total = await query.getCount();
 
   return { total, data: formattedData };
 };
